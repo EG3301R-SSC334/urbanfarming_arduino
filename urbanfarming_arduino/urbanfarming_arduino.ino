@@ -27,26 +27,11 @@ union dataPacket_t {
 
 dataPacket_t data;
 
-struct commandData {
-  byte pump;
-};
-
-const int command_union_size = sizeof(commandData);
-
-union commandPacket_t {
-  commandData commands;
-  byte byteArray[command_union_size];
-};
-
-commandPacket_t command;
-
 const long readInterval = 3000;         // 30 sec
 const long postInterval = 6000;        // 10 min
 const long peristalticDuration = 1000;   // 1 sec
 const long pumpOnDuration = 300000;      // 5 min
 const long pumpOffDuration = 720000;     // 12 min
-
-byte piCommand[command_union_size];
 
 unsigned long currentMillis = 0;
 unsigned long previousReadMillis = 0;
@@ -76,7 +61,7 @@ void loop() {
   pump();
   readData();
   postData();
-//  readCommand();
+  readCommand();
 }
 
 void pump() {
@@ -112,9 +97,6 @@ void readData() {
     contA = digitalRead(FLOAT_1);
     contB = digitalRead(FLOAT_2);
     contC = digitalRead(FLOAT_3);
-//    Serial.println(ecValue);
-//    Serial.println(temperature);
-//    Serial.println(humidity);
     previousReadMillis += readInterval;
   }
 }
@@ -134,7 +116,6 @@ void postData() {
         Serial.print(0);
       }
       Serial.print(data.byteArray[i], HEX);
-//      Serial.print("\t");
     }
     Serial.print("\n");
     
@@ -143,20 +124,11 @@ void postData() {
 }
 
 void readCommand() {
-  if (Serial.available() >= command_union_size) {
-    for (byte n=0; n<command_union_size; n++) {
-      piCommand[n] = Serial.read();
-    }
-    for (byte n=0; n<command_union_size; n++) {
-      command.byteArray[n] = piCommand[n];
-    }
-    switch (command.commands.pump) {
-      case 1:
-        digitalWrite(6, HIGH);
-        break;
-      default:
-        digitalWrite(6, LOW);
-        break;
-    }
+  if (Serial.available() > 0) {
+    String line = Serial.readStringUntil('\n');
+    
+//  check length of string
+//  split string into components
+//  do stuff
   }
 }
