@@ -3,10 +3,15 @@
 #include <DFRobot_EC.h>
 
 #define EC_PIN A1
-#define FLOAT_1 2
-#define FLOAT_2 3
-#define FLOAT_3 4
-#define MAIN_PUMP 5
+
+#define FLOAT_1     2
+#define FLOAT_2     3
+#define FLOAT_3     4
+#define LIGHT_PIN   5
+#define MAIN_PUMP   6
+#define PUMP_1      7
+#define PUMP_2      8
+#define PUMP_3      9
 
 struct __attribute__((__packed__)) sensorData {
   float EC;
@@ -27,21 +32,19 @@ union dataPacket_t {
 
 dataPacket_t data;
 
-const long readInterval = 3000;         // 30 sec
-const long postInterval = 6000;        // 10 min
+const long dataInterval = 30000;         // 30 sec
 const long peristalticDuration = 1000;   // 1 sec
-const long pumpOnDuration = 300000;      // 5 min
-const long pumpOffDuration = 720000;     // 12 min
+long pumpOnDuration = 300000;      // 5 min
+long pumpOffDuration = 720000;     // 12 min
 
 unsigned long currentMillis = 0;
-unsigned long previousReadMillis = 0;
-unsigned long previousPostMillis = 0;
+unsigned long previousDataMillis = 0;
 unsigned long previousPeristalticMillis = 0;
 unsigned long previousPumpMillis = 0;
 
-byte pumpState = LOW;
+int pumpState = LOW;
 float voltage,ecValue,temperature, humidity, pH;
-byte contA = LOW, contB = LOW, contC = LOW;
+int contA = LOW, contB = LOW, contC = LOW;
 
 Adafruit_BME280 bme;
 DFRobot_EC ec;
@@ -53,63 +56,51 @@ void setup() {
   pinMode(FLOAT_1, INPUT_PULLUP);
   pinMode(FLOAT_2, INPUT_PULLUP);
   pinMode(FLOAT_3, INPUT_PULLUP);
-  pinMode(6, OUTPUT);
+  pinMode(LIGHT_PIN, OUTPUT);
+  pinMode(MAIN_PUMP, OUTPUT);
+  pinMode(PUMP_1, OUTPUT);
+  pinMode(PUMP_2, OUTPUT);
+  pinMode(PUMP_3, OUTPUT);
 }
 
 void loop() {
   currentMillis = millis();
   pump();
   readData();
-  postData();
   readCommand();
 }
 
 void pump() {
   if (pumpState == LOW) {
     if (currentMillis - previousPumpMillis >= pumpOffDuration) {
-      pumpState == HIGH;
+      pumpState = HIGH;
       digitalWrite(MAIN_PUMP, pumpState);
       previousPumpMillis += pumpOffDuration;
     }
   } else {
     if (currentMillis - previousPumpMillis >= pumpOnDuration) {
-      pumpState == LOW;
+      pumpState = LOW;
       digitalWrite(MAIN_PUMP, pumpState);
       previousPumpMillis += pumpOnDuration;
     }
   }
 }
 
-void readData() {
-  if (currentMillis - previousReadMillis >= readInterval) {
-//    temperature = bme.readTemperature();
-//    humidity = bme.readHumidity();
-//    voltage = analogRead(EC_PIN)/1024.0*5000;
-//    ecValue = ec.readEC(voltage, temperature);
-//    contA = digitalRead(FLOAT_1);
-//    contB = digitalRead(FLOAT_2);
-//    contC = digitalRead(FLOAT_3);
-    temperature = 25.5;
-    humidity = 70;
-    voltage = 3000;
-    pH = 6.5;
-    ecValue = ec.readEC(voltage, temperature);
-    contA = digitalRead(FLOAT_1);
-    contB = digitalRead(FLOAT_2);
-    contC = digitalRead(FLOAT_3);
-    previousReadMillis += readInterval;
-  }
+void peri(int pump) {
+  previousPeristalticMillis = millis();
+  
 }
 
-void postData() {
-  if (currentMillis - previousPostMillis >= postInterval) {
-    data.sensors.temp = temperature;
-    data.sensors.EC = ecValue;
-    data.sensors.humidity = humidity;
+void readData() {
+  if (currentMillis - previousDataMillis >= dataInterval) {
+    voltage = analogRead(EC_PIN)/1024.0*5000;
+    data.sensors.temp = bme.readTemperature();
+    data.sensors.EC = ec.readEC(voltage, temperature);
+    data.sensors.humidity = bme.readHumidity();
     data.sensors.pH = pH;
-    data.sensors.contA = contA;
-    data.sensors.contB = contB;
-    data.sensors.contC = contC;
+    data.sensors.contA = digitalRead(FLOAT_1);
+    data.sensors.contB = digitalRead(FLOAT_2);
+    data.sensors.contC = digitalRead(FLOAT_3);
 
     for (int i=0; i < data_union_size; i++) {
       if (data.byteArray[i] <16) {
@@ -119,16 +110,27 @@ void postData() {
     }
     Serial.print("\n");
     
-    previousPostMillis += postInterval;
+    previousDataMillis += dataInterval;
   }
 }
 
 void readCommand() {
   if (Serial.available() > 0) {
     String line = Serial.readStringUntil('\n');
-    
-//  check length of string
-//  split string into components
-//  do stuff
+    char control = line.charAt(0);
+    if (control == '1') {
+      pumpOnDuration = line.substring(1, 7).toInt();
+      pumpOffDuration = line.substring(7, 13).toInt();
+    } else if (control == '2') {
+      int pump = line.charAt(1);
+      peri(pump);
+    } else if (control == '3') {
+        char state = line.charAt(1);
+        if (state == '1') {
+          digitalWrite(LIGHT_PIN, HIGH);
+        } else if (state == '0') {
+          digitalWrite(LIGHT_PIN, LOW);
+        }
+    }
   }
 }
