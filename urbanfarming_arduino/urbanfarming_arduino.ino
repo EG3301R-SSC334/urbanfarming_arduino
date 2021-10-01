@@ -42,7 +42,7 @@ unsigned long previousDataMillis = 0;
 unsigned long previousPeristalticMillis = 0;
 unsigned long previousPumpMillis = 0;
 
-int pumpState = LOW;
+int pumpState = HIGH; // HIGH is OFF
 float voltage,ecValue,temperature, humidity, pH;
 int contA = LOW, contB = LOW, contC = LOW;
 
@@ -57,10 +57,15 @@ void setup() {
   pinMode(FLOAT_2, INPUT_PULLUP);
   pinMode(FLOAT_3, INPUT_PULLUP);
   pinMode(LIGHT_PIN, OUTPUT);
+  digitalWrite(LIGHT_PIN, HIGH);
   pinMode(MAIN_PUMP, OUTPUT);
+  digitalWrite(MAIN_PUMP, HIGH);
   pinMode(PUMP_1, OUTPUT);
+  digitalWrite(PUMP_1, HIGH);
   pinMode(PUMP_2, OUTPUT);
+  digitalWrite(PUMP_2, HIGH);
   pinMode(PUMP_3, OUTPUT);
+  digitalWrite(PUMP_3, HIGH);
 }
 
 void loop() {
@@ -72,16 +77,22 @@ void loop() {
 
 void pump() {
   if (pumpState == LOW) {
-    if (currentMillis - previousPumpMillis >= pumpOffDuration) {
+    if (currentMillis - previousPumpMillis >= pumpOnDuration) {
       pumpState = HIGH;
       digitalWrite(MAIN_PUMP, pumpState);
-      previousPumpMillis += pumpOffDuration;
+      digitalWrite(PUMP_1, pumpState);
+      digitalWrite(PUMP_2, pumpState);
+      digitalWrite(PUMP_3, pumpState);
+      previousPumpMillis += pumpOnDuration;
     }
   } else {
-    if (currentMillis - previousPumpMillis >= pumpOnDuration) {
+    if (currentMillis - previousPumpMillis >= pumpOffDuration) {
       pumpState = LOW;
       digitalWrite(MAIN_PUMP, pumpState);
-      previousPumpMillis += pumpOnDuration;
+      digitalWrite(PUMP_1, pumpState);
+      digitalWrite(PUMP_2, pumpState);
+      digitalWrite(PUMP_3, pumpState);
+      previousPumpMillis += pumpOffDuration;
     }
   }
 }
