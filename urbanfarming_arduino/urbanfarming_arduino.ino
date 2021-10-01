@@ -80,18 +80,12 @@ void pump() {
     if (currentMillis - previousPumpMillis >= pumpOnDuration) {
       pumpState = HIGH;
       digitalWrite(MAIN_PUMP, pumpState);
-      digitalWrite(PUMP_1, pumpState);
-      digitalWrite(PUMP_2, pumpState);
-      digitalWrite(PUMP_3, pumpState);
       previousPumpMillis += pumpOnDuration;
     }
   } else {
     if (currentMillis - previousPumpMillis >= pumpOffDuration) {
       pumpState = LOW;
       digitalWrite(MAIN_PUMP, pumpState);
-      digitalWrite(PUMP_1, pumpState);
-      digitalWrite(PUMP_2, pumpState);
-      digitalWrite(PUMP_3, pumpState);
       previousPumpMillis += pumpOffDuration;
     }
   }
