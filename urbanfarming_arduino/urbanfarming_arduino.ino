@@ -32,16 +32,23 @@ union dataPacket_t {
 
 dataPacket_t data;
 
-const long dataInterval = 30000;         // 30 sec
-const long peristalticDuration = 1000;   // 1 sec
-long pumpOnDuration = 300000;      // 5 min
-long pumpOffDuration = 720000;     // 12 min
+const long dataInterval = 30000;    // 30 sec
+long nutrientDuration = 1000;       // 1 sec
+long waterDuration = 1000;          // 1 sec
+long pumpOnDuration = 300000;       // 5 min
+long pumpOffDuration = 720000;      // 12 min
 
 unsigned long currentMillis = 0;
 unsigned long previousDataMillis = 0;
-unsigned long previousPeristalticMillis = 0;
+unsigned long previousNutrientMillis = 0;
+unsigned long previousWaterMillis = 0;
 unsigned long previousPumpMillis = 0;
 
+int nutrientControl = 0;
+int waterControl = 0;
+
+int nutrientState = HIGH;
+int waterState = HIGH;
 int pumpState = HIGH; // HIGH is OFF
 float voltage,ecValue,temperature, humidity, pH;
 int contA = LOW, contB = LOW, contC = LOW;
@@ -71,6 +78,8 @@ void setup() {
 void loop() {
   currentMillis = millis();
   pump();
+  nutrient();
+  water();
   readData();
   readCommand();
 }
@@ -91,9 +100,51 @@ void pump() {
   }
 }
 
-void peri(int pump) {
-  previousPeristalticMillis = millis();
-  
+void nutrient() {
+  if (nutrientControl == 1) {
+    if (nutrientState == LOW) {
+      if (currentMillis - previousNutrientMillis >= nutrientDuration) {
+        nutrientState = HIGH;
+        nutrientControl = 0;
+        digitalWrite(PUMP_1, nutrientState);
+        digitalWrite(PUMP_2, nutrientState);
+        previousNutrientMillis += nutrientDuration;
+      }
+    } else {
+      previousPumpMillis = currentMillis();
+      nutrientState = LOW;
+      digitalWrite(PUMP_1, nutrientState);
+      digitalWrite(PUMP_2, nutrientState);
+    }
+  } else {
+    if (nutrientState == LOW) {
+      nutrientState == HIGH;
+      digitalWrite(PUMP_1, nutrientState);
+      digitalWrite(PUMP_2, nutrientState);
+    }
+  }
+}
+
+void water() {
+  if (waterControl == 1) {
+    if (waterState == LOW) {
+      if (currentMillis - previouswaterMillis >= waterDuration) {
+        waterState = HIGH;
+        waterControl = 0;
+        digitalWrite(PUMP_3, waterState);
+        previouswaterMillis += waterDuration;
+      }
+    } else {
+      previousPumpMillis = currentMillis();
+      waterState = LOW;
+      digitalWrite(PUMP_3, waterState);
+    }
+  } else {
+    if (waterState == LOW) {
+      waterState == HIGH;
+      digitalWrite(PUMP_3, waterState);
+    }
+  }
 }
 
 void readData() {
@@ -128,7 +179,13 @@ void readCommand() {
       pumpOffDuration = line.substring(7, 13).toInt();
     } else if (control == '2') {
       int pump = line.charAt(1);
-      peri(pump);
+      if (pump == 1) {
+        nutrientDuration = line.substring(2,8).toInt();
+        nutrientControl = 1;
+      } else if (pump == 2) {
+        waterDuration = line.substring(2,8).toInt();
+        waterControl = 1;
+      }
     } else if (control == '3') {
         char state = line.charAt(1);
         if (state == '1') {
