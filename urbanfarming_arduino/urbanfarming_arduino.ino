@@ -111,7 +111,7 @@ void nutrient() {
         previousNutrientMillis += nutrientDuration;
       }
     } else {
-      previousPumpMillis = currentMillis();
+      previousPumpMillis = currentMillis;
       nutrientState = LOW;
       digitalWrite(PUMP_1, nutrientState);
       digitalWrite(PUMP_2, nutrientState);
@@ -128,14 +128,14 @@ void nutrient() {
 void water() {
   if (waterControl == 1) {
     if (waterState == LOW) {
-      if (currentMillis - previouswaterMillis >= waterDuration) {
+      if (currentMillis - previousWaterMillis >= waterDuration) {
         waterState = HIGH;
         waterControl = 0;
         digitalWrite(PUMP_3, waterState);
-        previouswaterMillis += waterDuration;
+        previousWaterMillis += waterDuration;
       }
     } else {
-      previousPumpMillis = currentMillis();
+      previousPumpMillis = currentMillis;
       waterState = LOW;
       digitalWrite(PUMP_3, waterState);
     }
