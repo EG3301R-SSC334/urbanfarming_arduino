@@ -7,8 +7,8 @@
 #define FLOAT_1     2
 #define FLOAT_2     3
 #define FLOAT_3     4
-#define LIGHT_PIN   5
-#define MAIN_PUMP   6
+#define MAIN_PUMP   5
+#define LIGHT_PIN   6
 #define PUMP_1      7
 #define PUMP_2      8
 #define PUMP_3      9
@@ -111,7 +111,7 @@ void nutrient() {
         previousNutrientMillis += nutrientDuration;
       }
     } else {
-      previousPumpMillis = currentMillis;
+      previousNutrientMillis = currentMillis;
       nutrientState = LOW;
       digitalWrite(PUMP_1, nutrientState);
       digitalWrite(PUMP_2, nutrientState);
@@ -135,7 +135,7 @@ void water() {
         previousWaterMillis += waterDuration;
       }
     } else {
-      previousPumpMillis = currentMillis;
+      previousWaterMillis = currentMillis;
       waterState = LOW;
       digitalWrite(PUMP_3, waterState);
     }
@@ -153,11 +153,11 @@ void readData() {
     data.sensors.temp = bme.readTemperature();
     data.sensors.EC = ec.readEC(voltage, temperature);
     data.sensors.humidity = bme.readHumidity();
-    data.sensors.pH = pH;
+    data.sensors.pH = 0;
     data.sensors.contA = digitalRead(FLOAT_1);
     data.sensors.contB = digitalRead(FLOAT_2);
     data.sensors.contC = digitalRead(FLOAT_3);
-
+    
     for (int i=0; i < data_union_size; i++) {
       if (data.byteArray[i] <16) {
         Serial.print(0);
@@ -165,7 +165,7 @@ void readData() {
       Serial.print(data.byteArray[i], HEX);
     }
     Serial.print("\n");
-    
+    Serial.flush();
     previousDataMillis += dataInterval;
   }
 }
@@ -179,20 +179,20 @@ void readCommand() {
       pumpOffDuration = line.substring(7, 13).toInt();
     } else if (control == '2') {
       int pump = line.charAt(1);
-      if (pump == 1) {
+      if (pump == '1') {
         nutrientDuration = line.substring(2,8).toInt();
         nutrientControl = 1;
-      } else if (pump == 2) {
+      } else if (pump == '2') {
         waterDuration = line.substring(2,8).toInt();
         waterControl = 1;
       }
     } else if (control == '3') {
-        char state = line.charAt(1);
-        if (state == '1') {
-          digitalWrite(LIGHT_PIN, HIGH);
-        } else if (state == '0') {
-          digitalWrite(LIGHT_PIN, LOW);
-        }
+      char state = line.charAt(1);
+      if (state == '1') { 
+        digitalWrite(LIGHT_PIN, HIGH);
+      } else if (state == '0') {
+        digitalWrite(LIGHT_PIN, LOW);
+      }
     }
   }
 }
